@@ -15,3 +15,7 @@ The 'Key' can be considered the variable name of the stack. For example, you cou
 Clean the key text
 
 Allow the stack to pop a default value if it is empty
+
+Add an override option
+
+Fix a 'no-change' prompt still having to be re-encoded

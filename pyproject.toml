@@ -1,0 +1,16 @@
+[project]
+name = "ComfyUI-Stacker"
+description = "Simple stack push/pop style nodes for images, strings, integers and generic objects (image batches, latents, face models etc)"
+version = "0.1.1"
+license = {file = "LICENSE"}
+dependencies = ["pickle"]
+
+[project.urls]
+Repository = "https://github.com/concarne000/ComfyUI-Stacker"
+#  Used by Comfy Registry https://registry.comfy.org
+
+[tool.comfy]
+PublisherId = "concarne000"
+DisplayName = "ComfyUI-Stacker"
+Icon = ""
+includes = []

@@ -16,7 +16,16 @@ from comfy.cli_args import args
 from PIL.PngImagePlugin import PngInfo
 from datetime import datetime
 import pickle
+import re
+import folder_paths
 
+def clean_filename(filename: str) -> str:
+    # Remove any character that is not a-z, A-Z, 0-9, space, dot, underscore, or hyphen
+    cleaned = re.sub(r'[^\w\s.-]', '', filename)
+    # Optionally replace spaces with underscores (or remove)
+    cleaned = cleaned.replace(' ', '_')
+    return cleaned
+    
 def pil2tensor(image):
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0)
  
@@ -40,6 +49,7 @@ class StackPushImage:
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+                "input_image": ("IMAGE",)
             },
             "hidden": {
                 "prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"
@@ -61,6 +71,8 @@ class StackPushImage:
     def execute(self, key, input_image, stackpath="./ComfyUI/Stack/", prompt=None, extra_pnginfo=None):
         if (key == ""):
             key = "default"
+            
+        key = clean_filename(key)
         
         print("Pushing stack")
         
@@ -122,6 +134,8 @@ class StackPushString:
         if (key == ""):
             key = "default"
         
+        key = clean_filename(key)
+        
         print("Pushing stack")
         
         path = stackpath + key + "/"
@@ -172,6 +186,8 @@ class StackPushInt:
         if (key == ""):
             key = "default"
         
+        key = clean_filename(key)
+        
         print("Pushing stack")
         
         path = stackpath + key + "/"
@@ -221,6 +237,8 @@ class StackPushObject:
         if (key == ""):
             key = "default"
         
+        key = clean_filename(key)
+        
         print("Pushing stack")
         
         path = stackpath + key + "/"
@@ -250,10 +268,12 @@ class StackPopImage:
         return {
             "required": {
                 "key": ("STRING", {"default": "default"}),
+                "fallback_enabled": ("BOOLEAN", {"default": False}),
             },
             
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+                "fallback_item": ("IMAGE",),
             },
             
         }
@@ -268,13 +288,17 @@ class StackPopImage:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, stackpath="./ComfyUI/Stack/"):
+        key = clean_filename(key)
+        
         path = stackpath + key + "/"
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist\n")      
+            print(f"Key doesn't exist")   
+            if (fallback_enabled):
+                return ( fallback_item, )
             
         # Get all .png files sorted by name
         png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('.png')] )
@@ -287,7 +311,10 @@ class StackPopImage:
             image = Image.open(last_file)
             print(f"Opened: {last_file}")
         else:
-            raise Exception("No image files found. Stack Empty.")
+            if (fallback_enabled):
+                return ( fallback_item, )
+            else:
+                raise Exception("No image files found. Stack Empty.")
             
         image = ImageOps.exif_transpose(image)
         image = image.convert("RGB")
@@ -309,9 +336,11 @@ class StackPopString:
         return {
             "required": {
                 "key": ("STRING", {"default": "default"}),
+                "fallback_enabled": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+                "fallback_item": ("STRING",),
             },
             
         }
@@ -326,13 +355,17 @@ class StackPopString:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, stackpath="./ComfyUI/Stack/"):
+        key = clean_filename(key)
+        
         path = stackpath + key + "/"
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist\n")      
+            print(f"Key doesn't exist")   
+            if (fallback_enabled):
+                return ( fallback_item, )
             
         # Get all .png files sorted by name
         png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._st')] )
@@ -348,7 +381,10 @@ class StackPopString:
                 result = f.read()
             print(f"Opened: {last_file}")
         else:
-            raise Exception("No string files found. Stack Empty.")
+            if (fallback_enabled):
+                return ( fallback_item, )
+            else:
+                raise Exception("No string files found. Stack Empty.")
                      
         os.remove(last_file)
         
@@ -364,9 +400,11 @@ class StackPopInt:
         return {
             "required": {
                 "key": ("STRING", {"default": "default"}),
+                "fallback_enabled": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+                "fallback_item": ("INT",),
             },
             
         }
@@ -381,13 +419,17 @@ class StackPopInt:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, stackpath="./ComfyUI/Stack/"):
+        key = clean_filename(key)
+        
         path = stackpath + key + "/"
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist\n")      
+            print(f"Key doesn't exist")   
+            if (fallback_enabled):
+                return ( fallback_item, )
             
         # Get all .png files sorted by name
         png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._nu')] )
@@ -403,7 +445,10 @@ class StackPopInt:
                 result = f.read()
             print(f"Opened: {last_file}")
         else:
-            raise Exception("No integer files found. Stack Empty.")
+            if (fallback_enabled):
+                return ( fallback_item, )
+            else:
+                raise Exception("No integer files found. Stack Empty.")
                       
         os.remove(last_file)
         
@@ -419,10 +464,12 @@ class StackPopObject:
         return {
             "required": {
                 "key": ("STRING", {"default": "default"}),
+                "fallback_enabled": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
-            },
+                "fallback_item": (any, {}),
+           },
             
         }
         
@@ -438,13 +485,21 @@ class StackPopObject:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item=None, stackpath="./ComfyUI/Stack/"):
+        
+        if not os.path.exists(os.path.join(folder_paths.get_user_directory(), "allow_generic_types.plz")):
+            raise Exception("Generic object popping not allowed until dummy file \"allow_generic_types.plz\" exists in user folder ("+folder_paths.get_user_directory()+"). You should not do this unless you understand the risks of loading generic objects.")
+        
+        key = clean_filename(key)
+        
         path = stackpath + key + "/"
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist\n")      
+            print(f"Key doesn't exist")   
+            if (fallback_enabled):
+                return ( fallback_item, )
             
         # Get all .png files sorted by name
         png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._pkl')] )
@@ -460,7 +515,10 @@ class StackPopObject:
                 loaded_object = pickle.load(f)
             print(f"Opened: {last_file}")
         else:
-            raise Exception("No integer files found. Stack Empty.")
+            if (fallback_enabled):
+                return ( fallback_item, )
+            else:
+                raise Exception("No object files found. Stack Empty.")
                       
         os.remove(last_file)
         

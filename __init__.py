@@ -204,6 +204,57 @@ class StackPushInt:
          
         return { "ui": { "dunnohowtofixyet": "null" } }
 
+class StackPushFloat:
+    
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "key": ("STRING", {"default": "default"}),
+                "numbervalue": ("FLOAT",)
+            },
+             "optional": {
+                "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+            },
+        }
+
+    RETURN_TYPES = ()
+
+    FUNCTION = "execute"
+
+    CATEGORY = "ConCarne"
+
+    OUTPUT_NODE = True
+    
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        return float("NaN")
+   
+    def execute(self, key, numbervalue, stackpath="./ComfyUI/Stack/"):
+        if (key == ""):
+            key = "default"
+        
+        key = clean_filename(key)
+        
+        print("Pushing stack")
+        
+        path = stackpath + key + "/"
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+            print(f"Created path: {path}")      
+        
+ #       for (batch_number, num) in enumerate(numbervalue):     
+        now = datetime.now()
+        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S") + "._fl")
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(str(numbervalue))
+         
+        return { "ui": { "dunnohowtofixyet": "null" } }
+
 class StackPushObject:
     
     def __init__(self):
@@ -269,11 +320,13 @@ class StackPopImage:
             "required": {
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
+                "override_enabled": ("BOOLEAN", {"default": False}),
             },
             
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
                 "fallback_item": ("IMAGE",),
+                "override_item": ("IMAGE",),
             },
             
         }
@@ -288,7 +341,11 @@ class StackPopImage:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, fallback_item, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, override_enabled, fallback_item=None, override_item=None, stackpath="./ComfyUI/Stack/"):
+        
+        if override_enabled:
+            return (override_item,)
+            
         key = clean_filename(key)
         
         path = stackpath + key + "/"
@@ -337,10 +394,12 @@ class StackPopString:
             "required": {
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
+                "override_enabled": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
                 "fallback_item": ("STRING",),
+                "override_item": ("STRING",),
             },
             
         }
@@ -355,7 +414,11 @@ class StackPopString:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, fallback_item, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackpath="./ComfyUI/Stack/"):
+        
+        if override_enabled:
+            return (override_item,)
+            
         key = clean_filename(key)
         
         path = stackpath + key + "/"
@@ -401,10 +464,12 @@ class StackPopInt:
             "required": {
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
+                "override_enabled": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
                 "fallback_item": ("INT",),
+                "override_item": ("INT",),
             },
             
         }
@@ -419,7 +484,11 @@ class StackPopInt:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, fallback_item, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackpath="./ComfyUI/Stack/"):
+        
+        if override_enabled:
+            return (override_item,)
+            
         key = clean_filename(key)
         
         path = stackpath + key + "/"
@@ -454,6 +523,76 @@ class StackPopInt:
         
         return (int(result), )
 
+class StackPopFloat:
+    
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "key": ("STRING", {"default": "default"}),
+                "fallback_enabled": ("BOOLEAN", {"default": False}),
+                "override_enabled": ("BOOLEAN", {"default": False}),
+            },
+            "optional": {
+                "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+                "fallback_item": ("FLOAT",),
+                "override_item": ("FLOAT",),
+            },
+            
+        }
+        
+    RETURN_TYPES = ("FLOAT",)
+
+    FUNCTION = "execute"
+
+    CATEGORY = "ConCarne"
+    
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        return float("NaN")
+   
+    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackpath="./ComfyUI/Stack/"):
+        
+        if override_enabled:
+            return (override_item,)
+            
+        key = clean_filename(key)
+        
+        path = stackpath + key + "/"
+        
+        images = []
+        
+        if not os.path.exists(path):
+            print(f"Key doesn't exist")   
+            if (fallback_enabled):
+                return ( fallback_item, )
+            
+        # Get all .png files sorted by name
+        png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._fl')] )
+
+        last_file = ""
+
+        result = ""
+
+        # Check if there are any PNG files
+        if png_files:
+            last_file = os.path.join(path, png_files[-1])
+            with open(last_file, 'r', encoding='utf-8') as f:
+                result = f.read()
+            print(f"Opened: {last_file}")
+        else:
+            if (fallback_enabled):
+                return ( fallback_item, )
+            else:
+                raise Exception("No float files found. Stack Empty.")
+                      
+        os.remove(last_file)
+        
+        return (float(result), )
+
 class StackPopObject:
     
     def __init__(self):
@@ -465,10 +604,12 @@ class StackPopObject:
             "required": {
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
+                "override_enabled": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
                 "fallback_item": (any, {}),
+                "override_item": (any, {}),
            },
             
         }
@@ -485,11 +626,14 @@ class StackPopObject:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, fallback_item=None, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, override_enabled, override_item=None, fallback_item=None, stackpath="./ComfyUI/Stack/"):
         
         if not os.path.exists(os.path.join(folder_paths.get_user_directory(), "allow_generic_types.plz")):
             raise Exception("Generic object popping not allowed until dummy file \"allow_generic_types.plz\" exists in user folder ("+folder_paths.get_user_directory()+"). You should not do this unless you understand the risks of loading generic objects.")
-        
+                
+        if override_enabled:
+            return (override_item,)
+
         key = clean_filename(key)
         
         path = stackpath + key + "/"
@@ -530,10 +674,12 @@ NODE_CLASS_MAPPINGS = {
     "StackPushImage": StackPushImage,
     "StackPushString": StackPushString,
     "StackPushInt": StackPushInt,
+    "StackPushFloat": StackPushFloat,
     "StackPushObject": StackPushObject,
     "StackPopImage": StackPopImage,
     "StackPopString": StackPopString,
     "StackPopInt": StackPopInt,
+    "StackPopFloat": StackPopFloat,
     "StackPopObject": StackPopObject,
 }
 
@@ -542,9 +688,11 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "StackPushImage": "StackPushImage",
     "StackPushString": "StackPushString",
     "StackPushInt": "StackPushInt",
+    "StackPushInt": "StackPushInt",
     "StackPushObject": "StackPushObject",
     "StackPopImage": "StackPopImage",
     "StackPopString": "StackPopString",
     "StackPopInt": "StackPopInt",
+    "StackPopFloat": "StackPopFloat",
     "StackPopObject": "StackPopObject",
 }

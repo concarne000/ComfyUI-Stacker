@@ -15,10 +15,17 @@ from PIL import Image, ImageOps
 from comfy.cli_args import args
 from PIL.PngImagePlugin import PngInfo
 from datetime import datetime
+import pickle
 
 def pil2tensor(image):
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0)
-    
+ 
+class AnyType(str):
+    def __ne__(self, __value: object) -> bool:
+        return False
+        
+any = AnyType("*")
+ 
 class StackPushImage:
     
     def __init__(self):
@@ -178,6 +185,56 @@ class StackPushInt:
         filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S") + "._nu")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(str(numbervalue))
+         
+        return { "ui": { "dunnohowtofixyet": "null" } }
+
+class StackPushObject:
+    
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "key": ("STRING", {"default": "default"}),
+                "object": (any, {})
+            },
+             "optional": {
+                "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+            },
+        }
+
+    RETURN_TYPES = ()
+
+    FUNCTION = "execute"
+
+    CATEGORY = "ConCarne"
+
+    OUTPUT_NODE = True
+    
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        return float("NaN")
+   
+    def execute(self, key, object, stackpath="./ComfyUI/Stack/"):
+        if (key == ""):
+            key = "default"
+        
+        print("Pushing stack")
+        
+        path = stackpath + key + "/"
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+            print(f"Created path: {path}")      
+        
+ #       for (batch_number, num) in enumerate(numbervalue):     
+        now = datetime.now()
+        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S") + "._pkl")
+        
+        with open(filename, 'wb') as f:
+            pickle.dump(object, f)
          
         return { "ui": { "dunnohowtofixyet": "null" } }
 
@@ -352,6 +409,62 @@ class StackPopInt:
         
         return (int(result), )
 
+class StackPopObject:
+    
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "key": ("STRING", {"default": "default"}),
+            },
+            "optional": {
+                "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
+            },
+            
+        }
+        
+    RETURN_TYPES = (any,)
+    RETURN_NAMES = ("any",)
+#    RETURN_TYPES = ("CONDITIONING","LATENT","IMAGE","STRING")
+#    OUTPUT_NODE = True
+    FUNCTION = "execute"
+
+    CATEGORY = "ConCarne"
+    
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        return float("NaN")
+   
+    def execute(self, key, stackpath="./ComfyUI/Stack/"):
+        path = stackpath + key + "/"
+        
+        images = []
+        
+        if not os.path.exists(path):
+            print(f"Key doesn't exist\n")      
+            
+        # Get all .png files sorted by name
+        png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._pkl')] )
+
+        last_file = ""
+
+        result = ""
+
+        # Check if there are any PNG files
+        if png_files:
+            last_file = os.path.join(path, png_files[-1])
+            with open(last_file, 'rb') as f:
+                loaded_object = pickle.load(f)
+            print(f"Opened: {last_file}")
+        else:
+            raise Exception("No integer files found. Stack Empty.")
+                      
+        os.remove(last_file)
+        
+        return (loaded_object,)#loaded_object,loaded_object,loaded_object )
 
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
@@ -359,9 +472,11 @@ NODE_CLASS_MAPPINGS = {
     "StackPushImage": StackPushImage,
     "StackPushString": StackPushString,
     "StackPushInt": StackPushInt,
+    "StackPushObject": StackPushObject,
     "StackPopImage": StackPopImage,
     "StackPopString": StackPopString,
     "StackPopInt": StackPopInt,
+    "StackPopObject": StackPopObject,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -369,7 +484,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "StackPushImage": "StackPushImage",
     "StackPushString": "StackPushString",
     "StackPushInt": "StackPushInt",
+    "StackPushObject": "StackPushObject",
     "StackPopImage": "StackPopImage",
     "StackPopString": "StackPopString",
     "StackPopInt": "StackPopInt",
+    "StackPopObject": "StackPopObject",
 }

@@ -321,6 +321,7 @@ class StackPopImage:
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
                 "override_enabled": ("BOOLEAN", {"default": False}),
+                "stackmode": ( ['Normal', 'Peek', 'Pop Bottom', 'Peek Bottom'], {"default": "Normal"} ),
             },
             
             "optional": {
@@ -341,7 +342,7 @@ class StackPopImage:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, override_enabled, fallback_item=None, override_item=None, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, override_enabled, stackmode, fallback_item=None, override_item=None, stackpath="./ComfyUI/Stack/"):
         
         if override_enabled:
             return (override_item,)
@@ -364,7 +365,11 @@ class StackPopImage:
 
         # Check if there are any PNG files
         if png_files:
-            last_file = os.path.join(path, png_files[-1])
+            if stackmode == 'Normal' or stackmode == 'Peek':
+                last_file = os.path.join(path, png_files[-1])
+            else:
+                last_file = os.path.join(path, png_files[0])
+
             image = Image.open(last_file)
             print(f"Opened: {last_file}")
         else:
@@ -379,7 +384,8 @@ class StackPopImage:
                 
         images.append(image)
         
-        os.remove(last_file)
+        if stackmode == 'Normal' or stackmode == 'Pop Bottom':
+            os.remove(last_file)
         
         return ( torch.cat(images, dim=0), )
 
@@ -395,6 +401,7 @@ class StackPopString:
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
                 "override_enabled": ("BOOLEAN", {"default": False}),
+                "stackmode": ( ['Normal', 'Peek', 'Pop Bottom', 'Peek Bottom'], {"default": "Normal"} ),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
@@ -414,7 +421,7 @@ class StackPopString:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackmode, stackpath="./ComfyUI/Stack/"):
         
         if override_enabled:
             return (override_item,)
@@ -439,7 +446,11 @@ class StackPopString:
 
         # Check if there are any PNG files
         if png_files:
-            last_file = os.path.join(path, png_files[-1])
+            if stackmode == 'Normal' or stackmode == 'Peek':
+                last_file = os.path.join(path, png_files[-1])
+            else:
+                last_file = os.path.join(path, png_files[0])
+
             with open(last_file, 'r', encoding='utf-8') as f:
                 result = f.read()
             print(f"Opened: {last_file}")
@@ -449,7 +460,8 @@ class StackPopString:
             else:
                 raise Exception("No string files found. Stack Empty.")
                      
-        os.remove(last_file)
+        if stackmode == 'Normal' or stackmode == 'Pop Bottom':
+            os.remove(last_file)
         
         return (result, )
 
@@ -465,6 +477,7 @@ class StackPopInt:
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
                 "override_enabled": ("BOOLEAN", {"default": False}),
+                "stackmode": ( ['Normal', 'Peek', 'Pop Bottom', 'Peek Bottom'], {"default": "Normal"} ),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
@@ -484,7 +497,7 @@ class StackPopInt:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackmode, stackpath="./ComfyUI/Stack/"):
         
         if override_enabled:
             return (override_item,)
@@ -509,7 +522,11 @@ class StackPopInt:
 
         # Check if there are any PNG files
         if png_files:
-            last_file = os.path.join(path, png_files[-1])
+            if stackmode == 'Normal' or stackmode == 'Peek':
+                last_file = os.path.join(path, png_files[-1])
+            else:
+                last_file = os.path.join(path, png_files[0])
+                
             with open(last_file, 'r', encoding='utf-8') as f:
                 result = f.read()
             print(f"Opened: {last_file}")
@@ -519,7 +536,8 @@ class StackPopInt:
             else:
                 raise Exception("No integer files found. Stack Empty.")
                       
-        os.remove(last_file)
+        if stackmode == 'Normal' or stackmode == 'Pop Bottom':
+            os.remove(last_file)
         
         return (int(result), )
 
@@ -535,6 +553,7 @@ class StackPopFloat:
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
                 "override_enabled": ("BOOLEAN", {"default": False}),
+                "stackmode": ( ['Normal', 'Peek', 'Pop Bottom', 'Peek Bottom'], {"default": "Normal"} ),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
@@ -554,7 +573,7 @@ class StackPopFloat:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, fallback_item, override_enabled, override_item, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, fallback_item, override_enabled, stackmode, override_item, stackpath="./ComfyUI/Stack/"):
         
         if override_enabled:
             return (override_item,)
@@ -579,7 +598,10 @@ class StackPopFloat:
 
         # Check if there are any PNG files
         if png_files:
-            last_file = os.path.join(path, png_files[-1])
+            if stackmode == 'Normal' or stackmode == 'Peek':
+                last_file = os.path.join(path, png_files[-1])
+            else:
+                last_file = os.path.join(path, png_files[0])
             with open(last_file, 'r', encoding='utf-8') as f:
                 result = f.read()
             print(f"Opened: {last_file}")
@@ -589,7 +611,8 @@ class StackPopFloat:
             else:
                 raise Exception("No float files found. Stack Empty.")
                       
-        os.remove(last_file)
+        if stackmode == 'Normal' or stackmode == 'Pop Bottom':
+            os.remove(last_file)
         
         return (float(result), )
 
@@ -605,6 +628,7 @@ class StackPopObject:
                 "key": ("STRING", {"default": "default"}),
                 "fallback_enabled": ("BOOLEAN", {"default": False}),
                 "override_enabled": ("BOOLEAN", {"default": False}),
+                "stackmode": ( ['Normal', 'Peek', 'Pop Bottom', 'Peek Bottom'], {"default": "Normal"} ),
             },
             "optional": {
                 "stackpath": ("STRING",{"default": "./ComfyUI/Stack/"}),
@@ -626,7 +650,7 @@ class StackPopObject:
     def IS_CHANGED(cls, **kwargs):
         return float("NaN")
    
-    def execute(self, key, fallback_enabled, override_enabled, override_item=None, fallback_item=None, stackpath="./ComfyUI/Stack/"):
+    def execute(self, key, fallback_enabled, override_enabled, stackmode, override_item=None, fallback_item=None, stackpath="./ComfyUI/Stack/"):
         
         if not os.path.exists(os.path.join(folder_paths.get_user_directory(), "allow_generic_types.plz")):
             raise Exception("Generic object popping not allowed until dummy file \"allow_generic_types.plz\" exists in user folder ("+folder_paths.get_user_directory()+"). You should not do this unless you understand the risks of loading generic objects.")
@@ -654,7 +678,11 @@ class StackPopObject:
 
         # Check if there are any PNG files
         if png_files:
-            last_file = os.path.join(path, png_files[-1])
+            if stackmode == 'Normal' or stackmode == 'Peek':
+                last_file = os.path.join(path, png_files[-1])
+            else:
+                last_file = os.path.join(path, png_files[0])
+
             with open(last_file, 'rb') as f:
                 loaded_object = pickle.load(f)
             print(f"Opened: {last_file}")
@@ -664,7 +692,8 @@ class StackPopObject:
             else:
                 raise Exception("No object files found. Stack Empty.")
                       
-        os.remove(last_file)
+        if stackmode == 'Normal' or stackmode == 'Pop Bottom':
+            os.remove(last_file)
         
         return (loaded_object,)#loaded_object,loaded_object,loaded_object )
 

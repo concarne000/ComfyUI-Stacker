@@ -5,7 +5,6 @@ import random
 import sys
 import traceback
 import shlex
-import os
 import numpy as np
 import torch
 import hashlib
@@ -28,6 +27,11 @@ def clean_filename(filename: str) -> str:
     
 def pil2tensor(image):
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0)
+
+def ensure_stack_dir(stackpath, key):
+    path = os.path.join(stackpath, clean_filename(key))
+    os.makedirs(path, exist_ok=True)
+    return path
  
 class AnyType(str):
     def __ne__(self, __value: object) -> bool:
@@ -72,15 +76,7 @@ class StackPushImage:
         if (key == ""):
             key = "default"
             
-        key = clean_filename(key)
-        
-        print("Pushing stack")
-        
-        path = stackpath + key + "/"
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-            print(f"Created path: {path}")      
+        path = ensure_stack_dir(stackpath,key)  
         
         counter = 0
         
@@ -95,11 +91,11 @@ class StackPushImage:
                 if prompt is not None:
                     metadata.add_text("prompt", json.dumps(prompt))
 
-            filename = "stack" + now.strftime("%Y%m%d%H%M%S") + str(batch_number) + ".png"
+            filename = "stack" + now.strftime("%Y%m%d%H%M%S%f") + str(batch_number) + ".png"
             img.save(os.path.join(path, filename), pnginfo=metadata, compress_level=8)
             counter += 1
         
-        return { "ui": { "dunnohowtofixyet": "null" } }
+        return ( None, )
 
 class StackPushString:
     
@@ -134,24 +130,16 @@ class StackPushString:
         if (key == ""):
             key = "default"
         
-        key = clean_filename(key)
-        
-        print("Pushing stack")
-        
-        path = stackpath + key + "/"
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-            print(f"Created path: {path}")      
-        
+        path = ensure_stack_dir(stackpath,key)  
+       
         #for (batch_number, stringv) in enumerate(stringvalue): 
         now = datetime.now()            
         
-        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S") + "._st")
+        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S%f") + "._st")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(stringvalue)
         
-        return { "ui": { "dunnohowtofixyet": "null" } }
+        return ( None, )
 
 class StackPushInt:
     
@@ -186,23 +174,15 @@ class StackPushInt:
         if (key == ""):
             key = "default"
         
-        key = clean_filename(key)
-        
-        print("Pushing stack")
-        
-        path = stackpath + key + "/"
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-            print(f"Created path: {path}")      
+        path = ensure_stack_dir(stackpath,key)  
         
  #       for (batch_number, num) in enumerate(numbervalue):     
         now = datetime.now()
-        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S") + "._nu")
+        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S%f") + "._nu")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(str(numbervalue))
          
-        return { "ui": { "dunnohowtofixyet": "null" } }
+        return ( None, )
 
 class StackPushFloat:
     
@@ -237,23 +217,15 @@ class StackPushFloat:
         if (key == ""):
             key = "default"
         
-        key = clean_filename(key)
-        
-        print("Pushing stack")
-        
-        path = stackpath + key + "/"
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-            print(f"Created path: {path}")      
+        path = ensure_stack_dir(stackpath,key)      
         
  #       for (batch_number, num) in enumerate(numbervalue):     
         now = datetime.now()
-        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S") + "._fl")
+        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S%f") + "._fl")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(str(numbervalue))
          
-        return { "ui": { "dunnohowtofixyet": "null" } }
+        return ( None, )
 
 class StackPushObject:
     
@@ -288,24 +260,16 @@ class StackPushObject:
         if (key == ""):
             key = "default"
         
-        key = clean_filename(key)
-        
-        print("Pushing stack")
-        
-        path = stackpath + key + "/"
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-            print(f"Created path: {path}")      
+        path = ensure_stack_dir(stackpath,key)  
         
  #       for (batch_number, num) in enumerate(numbervalue):     
         now = datetime.now()
-        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S") + "._pkl")
+        filename = os.path.join(path,"stack" + now.strftime("%Y%m%d%H%M%S%f") + "._pkl")
         
         with open(filename, 'wb') as f:
             pickle.dump(object, f)
          
-        return { "ui": { "dunnohowtofixyet": "null" } }
+        return ( None, )
 
                         
 
@@ -347,31 +311,30 @@ class StackPopImage:
         if override_enabled:
             return (override_item,)
             
-        key = clean_filename(key)
-        
-        path = stackpath + key + "/"
+        path = os.path.join(stackpath,key)  
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist")   
             if (fallback_enabled):
                 return ( fallback_item, )
+            else:
+                raise Exception(f"Key doesn't exist") 
             
         # Get all .png files sorted by name
-        png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('.png')] )
+        sorted_files = sorted([f for f in os.listdir(path) if f.lower().endswith('.png')] )
 
         last_file = ""
 
         # Check if there are any PNG files
-        if png_files:
+        if sorted_files:
             if stackmode == 'Normal' or stackmode == 'Peek':
-                last_file = os.path.join(path, png_files[-1])
+                last_file = os.path.join(path, sorted_files[-1])
             else:
-                last_file = os.path.join(path, png_files[0])
+                last_file = os.path.join(path, sorted_files[0])
 
             image = Image.open(last_file)
-            print(f"Opened: {last_file}")
+            #print(f"Opened: {last_file}")
         else:
             if (fallback_enabled):
                 return ( fallback_item, )
@@ -426,34 +389,33 @@ class StackPopString:
         if override_enabled:
             return (override_item,)
             
-        key = clean_filename(key)
-        
-        path = stackpath + key + "/"
+        path = os.path.join(stackpath,key)  
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist")   
             if (fallback_enabled):
                 return ( fallback_item, )
-            
-        # Get all .png files sorted by name
-        png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._st')] )
+            else:
+                raise Exception(f"Key doesn't exist") 
+                
+        # Get all ._st files sorted by name
+        sorted_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._st')] )
 
         last_file = ""
 
         result = ""
 
-        # Check if there are any PNG files
-        if png_files:
+        # Check if there are any string files
+        if sorted_files:
             if stackmode == 'Normal' or stackmode == 'Peek':
-                last_file = os.path.join(path, png_files[-1])
+                last_file = os.path.join(path, sorted_files[-1])
             else:
-                last_file = os.path.join(path, png_files[0])
+                last_file = os.path.join(path, sorted_files[0])
 
             with open(last_file, 'r', encoding='utf-8') as f:
                 result = f.read()
-            print(f"Opened: {last_file}")
+            #print(f"Opened: {last_file}")
         else:
             if (fallback_enabled):
                 return ( fallback_item, )
@@ -501,35 +463,34 @@ class StackPopInt:
         
         if override_enabled:
             return (override_item,)
-            
-        key = clean_filename(key)
-        
-        path = stackpath + key + "/"
+
+        path = os.path.join(stackpath,key)  
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist")   
             if (fallback_enabled):
                 return ( fallback_item, )
-            
-        # Get all .png files sorted by name
-        png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._nu')] )
+            else:
+                raise Exception(f"Key doesn't exist") 
+                
+        # Get all ._nu files sorted by name
+        sorted_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._nu')] )
 
         last_file = ""
 
         result = ""
 
-        # Check if there are any PNG files
-        if png_files:
+        # Check if there are any int files
+        if sorted_files:
             if stackmode == 'Normal' or stackmode == 'Peek':
-                last_file = os.path.join(path, png_files[-1])
+                last_file = os.path.join(path, sorted_files[-1])
             else:
-                last_file = os.path.join(path, png_files[0])
+                last_file = os.path.join(path, sorted_files[0])
                 
             with open(last_file, 'r', encoding='utf-8') as f:
                 result = f.read()
-            print(f"Opened: {last_file}")
+            #print(f"Opened: {last_file}")
         else:
             if (fallback_enabled):
                 return ( fallback_item, )
@@ -578,33 +539,32 @@ class StackPopFloat:
         if override_enabled:
             return (override_item,)
             
-        key = clean_filename(key)
-        
-        path = stackpath + key + "/"
+        path = os.path.join(stackpath,key)  
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist")   
             if (fallback_enabled):
                 return ( fallback_item, )
-            
-        # Get all .png files sorted by name
-        png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._fl')] )
+            else:
+                raise Exception(f"Key doesn't exist") 
+                
+        # Get all ._fl files sorted by name
+        sorted_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._fl')] )
 
         last_file = ""
 
         result = ""
 
-        # Check if there are any PNG files
-        if png_files:
+        # Check if there are any float files
+        if sorted_files:
             if stackmode == 'Normal' or stackmode == 'Peek':
-                last_file = os.path.join(path, png_files[-1])
+                last_file = os.path.join(path, sorted_files[-1])
             else:
-                last_file = os.path.join(path, png_files[0])
+                last_file = os.path.join(path, sorted_files[0])
             with open(last_file, 'r', encoding='utf-8') as f:
                 result = f.read()
-            print(f"Opened: {last_file}")
+            #print(f"Opened: {last_file}")
         else:
             if (fallback_enabled):
                 return ( fallback_item, )
@@ -658,34 +618,33 @@ class StackPopObject:
         if override_enabled:
             return (override_item,)
 
-        key = clean_filename(key)
-        
-        path = stackpath + key + "/"
+        path = os.path.join(stackpath,key)  
         
         images = []
         
         if not os.path.exists(path):
-            print(f"Key doesn't exist")   
             if (fallback_enabled):
                 return ( fallback_item, )
-            
-        # Get all .png files sorted by name
-        png_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._pkl')] )
+            else:
+                raise Exception(f"Key doesn't exist") 
+                
+        # Get all .pkl files sorted by name
+        sorted_files = sorted([f for f in os.listdir(path) if f.lower().endswith('._pkl')] )
 
         last_file = ""
 
         result = ""
 
-        # Check if there are any PNG files
-        if png_files:
+        # Check if there are any pickle files
+        if sorted_files:
             if stackmode == 'Normal' or stackmode == 'Peek':
-                last_file = os.path.join(path, png_files[-1])
+                last_file = os.path.join(path, sorted_files[-1])
             else:
-                last_file = os.path.join(path, png_files[0])
+                last_file = os.path.join(path, sorted_files[0])
 
             with open(last_file, 'rb') as f:
                 loaded_object = pickle.load(f)
-            print(f"Opened: {last_file}")
+            #print(f"Opened: {last_file}")
         else:
             if (fallback_enabled):
                 return ( fallback_item, )
@@ -717,7 +676,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "StackPushImage": "StackPushImage",
     "StackPushString": "StackPushString",
     "StackPushInt": "StackPushInt",
-    "StackPushInt": "StackPushInt",
+    "StackPushFloat": "StackPushFloat",
     "StackPushObject": "StackPushObject",
     "StackPopImage": "StackPopImage",
     "StackPopString": "StackPopString",

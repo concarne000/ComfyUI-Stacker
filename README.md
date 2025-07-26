@@ -14,11 +14,12 @@ The Pop will take the last file that was saved in the stack, and then delete it.
 The Pop nodes allow the option to override the pop, e.g. if you want to change the prompt for a generation without repushing another prompt. The stack will remain unchanged with the override enabled.
 The Pop nodes also allow a fallback when the stack is empty, without the fallback enabled the node with throw an exception stopping the generation. Note that any pops done before the exception in a generation will remain popped from the stacks.
 
-Popping now has four modes
-Normal - Normal stack behavior, last in first out
-Peek - Peek at item on top of the stack, but don't remove
-Pop Bottom - Reversed stack behavior, first in first out (i.e. the oldest file will be drawn)
-Peek Bottom - Peek at the item at the bottom of the stack, don't remove
+Popping now has four modes :  
+
+Normal - Normal stack behavior, last in first out  
+Peek - Peek at item on top of the stack, but don't remove  
+Pop Bottom - Reversed stack behavior, first in first out (i.e. the oldest file will be drawn)  
+Peek Bottom - Peek at the item at the bottom of the stack, don't remove  
 
 ## Notes
 
